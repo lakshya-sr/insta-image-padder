@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Square Pad</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0e;
+    --surface: #181818;
+    --border: #2a2a2a;
+    --accent: #c8f565;
+    --accent-dim: #8ab83a;
+    --text: #e8e8e8;
+    --muted: #666;
+    --radius: 4px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    overflow-x: hidden;
+  }
+
+  header {
+    padding: 2rem 3rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 1.2rem;
+  }
+
+  header h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 1.8rem;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+
+  header span {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  main {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 0;
+    min-height: 0;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    overflow-y: auto;
+  }
+
+  .field-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+  }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 2.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(200, 245, 101, 0.04);
+  }
+
+  .drop-zone input {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .drop-icon {
+    font-size: 1.8rem;
+    margin-bottom: 0.6rem;
+    display: block;
+    opacity: 0.5;
+  }
+
+  .drop-zone p {
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .drop-zone p strong {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Color picker */
+  .color-row {
+    display: flex;
+    gap: 0.7rem;
+    align-items: center;
+  }
+
+  .color-swatch {
+    width: 42px; height: 42px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    overflow: hidden;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .color-swatch input[type="color"] {
+    position: absolute;
+    inset: -4px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    background: none;
+  }
+
+  .color-hex {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    padding: 0.55rem 0.8rem;
+    width: 110px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .color-hex:focus { border-color: var(--accent); }
+
+  /* Preset swatches */
+  .presets {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .preset-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .preset-btn:hover { transform: scale(1.15); }
+  .preset-btn.active { border-color: var(--accent); }
+
+  /* Output size */
+  .size-row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .size-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    padding: 0.55rem 0.8rem;
+    width: 90px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .size-input:focus { border-color: var(--accent); }
+  .size-input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .size-label { font-size: 0.75rem; color: var(--muted); }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle {
+    width: 34px; height: 18px;
+    background: var(--border);
+    border-radius: 9px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .toggle.on { background: var(--accent); }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: left 0.2s;
+  }
+
+  .toggle.on::after { left: 19px; }
+
+  .toggle-row span { font-size: 0.75rem; color: var(--muted); }
+
+  /* Action button */
+  .btn-process {
+    background: var(--accent);
+    color: #0e0e0e;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.8rem 1.4rem;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    width: 100%;
+  }
+
+  .btn-process:hover { background: #d6ff6e; }
+  .btn-process:active { transform: scale(0.98); }
+  .btn-process:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
+
+  /* Image info */
+  .info-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 2;
+    display: none;
+  }
+
+  .info-block.visible { display: block; }
+  .info-block strong { color: var(--text); }
+
+  /* ── Canvas area ── */
+  .canvas-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    background: repeating-conic-gradient(#1a1a1a 0% 25%, #141414 0% 50%) 0 0 / 24px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .empty-state .big { font-size: 3rem; opacity: 0.2; display: block; margin-bottom: 1rem; }
+  .empty-state p { font-size: 0.75rem; line-height: 1.8; }
+
+  #preview-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 100%;
+  }
+
+  #preview-wrap.visible { display: flex; }
+
+  #output-canvas {
+    max-width: min(600px, 100%);
+    max-height: 600px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: block;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .canvas-meta {
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.06em;
+  }
+
+  .btn-download {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.65rem 1.6rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .btn-download:hover { background: var(--accent); color: #0e0e0e; }
+
+  footer {
+    padding: 1rem 3rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  @media (max-width: 700px) {
+    main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    header { padding: 1.2rem 1.5rem; }
+    .canvas-area { padding: 1.5rem; min-height: 300px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SquarePad</h1>
+  <span>1:1 aspect ratio tool</span>
+</header>
+
+<main>
+  <aside class="sidebar">
+
+    <!-- Upload -->
+    <div>
+      <div class="field-label">Image</div>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept="image/*">
+        <span class="drop-icon">⬡</span>
+        <p><strong>Click or drag</strong> an image here<br>PNG · JPG · WEBP · GIF · BMP</p>
+      </div>
+    </div>
+
+    <!-- Image info -->
+    <div class="info-block" id="info-block">
+      <div>File <strong id="inf-name">—</strong></div>
+      <div>Size <strong id="inf-size">—</strong></div>
+      <div>Dimensions <strong id="inf-dims">—</strong></div>
+      <div>Output will be <strong id="inf-out">—</strong></div>
+    </div>
+
+    <!-- Padding color -->
+    <div>
+      <div class="field-label">Padding color</div>
+      <div class="color-row">
+        <div class="color-swatch" id="swatch">
+          <input type="color" id="color-picker" value="#ffffff">
+        </div>
+        <input type="text" class="color-hex" id="color-hex" value="#ffffff" maxlength="9" spellcheck="false">
+      </div>
+
+      <div style="margin-top:0.9rem;">
+        <div class="field-label" style="margin-bottom:0.5rem;">Presets</div>
+        <div class="presets" id="presets"></div>
+      </div>
+    </div>
+
+    <!-- Output size override -->
+    <div>
+      <div class="field-label">Output size (px)</div>
+      <div class="toggle-row" id="size-toggle-row">
+        <div class="toggle" id="size-toggle"></div>
+        <span>Custom output size</span>
+      </div>
+      <div class="size-row" style="margin-top:0.7rem;">
+        <input type="number" class="size-input" id="size-input" value="1080" min="64" max="8192" disabled>
+        <span class="size-label">× same (square)</span>
+      </div>
+    </div>
+
+    <!-- Process -->
+    <button class="btn-process" id="btn-process" disabled>Generate Square Image</button>
+
+  </aside>
+
+  <section class="canvas-area">
+    <div class="empty-state" id="empty-state">
+      <span class="big">⬡</span>
+      <p>Upload an image to get started.<br>The padded result will appear here.</p>
+    </div>
+
+    <div id="preview-wrap">
+      <canvas id="output-canvas"></canvas>
+      <div class="canvas-meta" id="canvas-meta"></div>
+      <button class="btn-download" id="btn-download">↓ Download PNG</button>
+    </div>
+  </section>
+</main>
+
+<footer>No data leaves your browser — processing is entirely local.</footer>
+
+<canvas id="work-canvas" style="display:none"></canvas>
+
+<script>
+const PRESETS = [
+  '#ffffff','#000000','#f5f5f0','#1a1a2e',
+  '#ffd6d6','#d6f5d6','#d6e8ff','#fff4d6',
+  '#c8f565','#ff6b6b','#4ecdc4','#ffe66d',
+];
+
+// ── State ──────────────────────────────────────────
+let imgEl = null;
+let customSize = false;
+
+// ── Refs ───────────────────────────────────────────
+const dropZone   = document.getElementById('drop-zone');
+const fileInput  = document.getElementById('file-input');
+const colorPick  = document.getElementById('color-picker');
+const colorHex   = document.getElementById('color-hex');
+const swatchEl   = document.getElementById('swatch');
+const presetsEl  = document.getElementById('presets');
+const sizeToggle = document.getElementById('size-toggle');
+const sizeInput  = document.getElementById('size-input');
+const btnProcess = document.getElementById('btn-process');
+const btnDownload= document.getElementById('btn-download');
+const infoBlock  = document.getElementById('info-block');
+const emptyState = document.getElementById('empty-state');
+const previewWrap= document.getElementById('preview-wrap');
+const outCanvas  = document.getElementById('output-canvas');
+const workCanvas = document.getElementById('work-canvas');
+const canvasMeta = document.getElementById('canvas-meta');
+
+// ── Preset swatches ────────────────────────────────
+PRESETS.forEach(hex => {
+  const btn = document.createElement('button');
+  btn.className = 'preset-btn';
+  btn.style.background = hex;
+  btn.title = hex;
+  if (hex === '#ffffff') btn.classList.add('active');
+  btn.addEventListener('click', () => {
+    setColor(hex);
+    presetsEl.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+  presetsEl.appendChild(btn);
+});
+
+// ── Color sync ─────────────────────────────────────
+function hexToRgb(hex) {
+  hex = hex.replace('#','');
+  if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+  const n = parseInt(hex, 16);
+  return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+}
+
+function isValidHex(h) { return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(h); }
+
+function setColor(hex) {
+  colorPick.value = hex.length === 4
+    ? '#' + hex[1]+hex[1]+hex[2]+hex[2]+hex[3]+hex[3]
+    : hex;
+  colorHex.value = hex;
+  swatchEl.style.background = hex;
+}
+
+colorPick.addEventListener('input', () => {
+  const h = colorPick.value;
+  colorHex.value = h;
+  swatchEl.style.background = h;
+  updatePresetActive(h);
+  if (imgEl) renderPreview();
+});
+
+colorHex.addEventListener('input', () => {
+  const h = colorHex.value.trim();
+  if (!h.startsWith('#')) { colorHex.value = '#' + h.replace('#',''); return; }
+  if (isValidHex(h)) {
+    const full = h.length === 4
+      ? '#' + h[1]+h[1]+h[2]+h[2]+h[3]+h[3]
+      : h;
+    colorPick.value = full;
+    swatchEl.style.background = full;
+    updatePresetActive(full);
+    if (imgEl) renderPreview();
+  }
+});
+
+function updatePresetActive(hex) {
+  presetsEl.querySelectorAll('.preset-btn').forEach(b => {
+    b.classList.toggle('active', b.style.background === hex ||
+      b.title.toLowerCase() === hex.toLowerCase());
+  });
+}
+
+// ── Size toggle ────────────────────────────────────
+sizeToggle.addEventListener('click', () => {
+  customSize = !customSize;
+  sizeToggle.classList.toggle('on', customSize);
+  sizeInput.disabled = !customSize;
+  if (imgEl) { updateInfo(); renderPreview(); }
+});
+
+sizeInput.addEventListener('change', () => {
+  if (imgEl) { updateInfo(); renderPreview(); }
+});
+
+// ── Drag and drop ──────────────────────────────────
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadFile(f);
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) loadFile(fileInput.files[0]);
+});
+
+// ── Load file ──────────────────────────────────────
+function loadFile(file) {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    imgEl = img;
+    imgEl._name = file.name;
+    imgEl._bytes = file.size;
+    updateInfo();
+    btnProcess.disabled = false;
+    renderPreview();
+  };
+  img.src = url;
+}
+
+function updateInfo() {
+  if (!imgEl) return;
+  const side = getOutputSide();
+  document.getElementById('inf-name').textContent = imgEl._name;
+  document.getElementById('inf-size').textContent = (imgEl._bytes / 1024).toFixed(1) + ' KB';
+  document.getElementById('inf-dims').textContent = imgEl.naturalWidth + ' × ' + imgEl.naturalHeight + ' px';
+  document.getElementById('inf-out').textContent = side + ' × ' + side + ' px';
+  infoBlock.classList.add('visible');
+}
+
+function getOutputSide() {
+  if (customSize) return Math.max(64, Math.min(8192, parseInt(sizeInput.value) || 1080));
+  return Math.max(imgEl.naturalWidth, imgEl.naturalHeight);
+}
+
+// ── Render ─────────────────────────────────────────
+function renderPreview() {
+  if (!imgEl) return;
+
+  const side = getOutputSide();
+  const hex = colorHex.value.trim();
+  const color = isValidHex(hex) ? hex : '#ffffff';
+
+  // Draw on work canvas
+  workCanvas.width = side;
+  workCanvas.height = side;
+  const ctx = workCanvas.getContext('2d');
+
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, side, side);
+
+  // Scale image to fit inside square, preserving aspect ratio
+  const iw = imgEl.naturalWidth;
+  const ih = imgEl.naturalHeight;
+  const scale = Math.min(side / iw, side / ih);
+  const dw = Math.round(iw * scale);
+  const dh = Math.round(ih * scale);
+  const dx = Math.round((side - dw) / 2);
+  const dy = Math.round((side - dh) / 2);
+
+  ctx.drawImage(imgEl, dx, dy, dw, dh);
+
+  // Show on visible canvas (scaled for display)
+  const display = Math.min(side, 600);
+  outCanvas.width = display;
+  outCanvas.height = display;
+  const dctx = outCanvas.getContext('2d');
+  dctx.drawImage(workCanvas, 0, 0, display, display);
+
+  canvasMeta.textContent = side + ' × ' + side + ' px  ·  padding: ' + color;
+
+  emptyState.style.display = 'none';
+  previewWrap.classList.add('visible');
+}
+
+// ── Process button (same as live preview but explicit) ──
+btnProcess.addEventListener('click', () => {
+  renderPreview();
+});
+
+// ── Download ───────────────────────────────────────
+btnDownload.addEventListener('click', () => {
+  if (!imgEl) return;
+  // Re-render at full res to work canvas
+  renderPreview();
+  const link = document.createElement('a');
+  const base = imgEl._name.replace(/\.[^.]+$/, '');
+  link.download = base + '_square.png';
+  link.href = workCanvas.toDataURL('image/png');
+  link.click();
+});
+
+// ── Init swatch background ──────────────────────────
+swatchEl.style.background = colorPick.value;
+</script>
+</body>
+</html>
